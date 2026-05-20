@@ -1,138 +1,207 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>رحلات البابا أثناسيوس</title>
+<title>اشتراك - رحلات البابا اثناسيوس</title>
 <style>
-  body {
-    font-family: 'Cairo', Tahoma, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    text-align: center;
-    padding: 50px 20px;
-    margin: 0;
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .box {
-    background: white;
-    padding: 40px 30px;
-    border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-    max-width: 420px;
-    width: 100%;
-  }
-  h2 {
-    color: #333;
-    margin-bottom: 10px;
-  }
-  p {
-    color: #666;
-  }
-  button {
-    background: #4285f4;
-    color: white;
-    border: none;
-    padding: 14px 28px;
-    border-radius: 8px;
-    font-size: 16px;
-    cursor: pointer;
-    margin-top: 20px;
-    width: 100%;
-    font-weight: bold;
-    transition: 0.3s;
-  }
-  button:hover {
-    background: #357ae8;
-    transform: translateY(-2px);
-  }
-  #userInfo {
-    margin-top: 20px;
-    display: none;
-  }
-  #userName {
-    font-size: 18px;
-    font-weight: bold;
-    color: #333;
-  }
-  #logoutBtn {
-    background: #dc3545;
-  }
-  #logoutBtn:hover {
-    background: #c82333;
-  }
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
+
+    :root {
+        --bg: #0a0a0f;
+        --neon: #00e5ff;
+        --neon-glow: 0 0 10px #00e5ff, 0 0 20px #00e5ff;
+        --text: #e0e0e0;
+        --card: #151520;
+    }
+
+    body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'Cairo', sans-serif;
+        min-height: 100vh;
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+    }
+
+  .container {
+        width: 100%;
+        max-width: 600px;
+        background: var(--card);
+        border: 2px solid var(--neon);
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: var(--neon-glow);
+    }
+
+    h1 {
+        text-align: center;
+        color: var(--neon);
+        text-shadow: var(--neon-glow);
+        margin-bottom: 20px;
+    }
+
+  .lang-switch {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+
+    button {
+        background: transparent;
+        border: 2px solid var(--neon);
+        color: var(--neon);
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-family: 'Cairo', sans-serif;
+        font-weight: 700;
+    }
+
+    button:hover {
+        background: var(--neon);
+        color: var(--bg);
+        box-shadow: var(--neon-glow);
+    }
+
+  .input-group {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    input {
+        flex: 1;
+        padding: 12px;
+        background: var(--bg);
+        border: 2px solid var(--neon);
+        border-radius: 8px;
+        color: var(--text);
+        font-size: 16px;
+    }
+
+  .admin-area {
+        display: none;
+        margin-top: 20px;
+        border-top: 1px solid var(--neon);
+        padding-top: 20px;
+    }
+
+  .person {
+        background: var(--bg);
+        border: 1px solid var(--neon);
+        padding: 12px;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+  .remove-btn {
+        border: 1px solid #ff4444;
+        color: #ff4444;
+        padding: 5px 12px;
+    }
 </style>
 </head>
 <body>
+<div class="container">
+    <div class="lang-switch">
+        <button onclick="setLang('ar')">العربية</button>
+        <button onclick="setLang('en')">English</button>
+        <button onclick="setLang('ja')">日本語</button>
+    </div>
 
-<div class="box">
-  <h2>أهلاً بيك في رحلات البابا أثناسيوس</h2>
-  
-  <div id="loginSection">
-    <p>سجل دخولك بجوجل عشان تكمل</p>
-    <button id="loginBtn">تسجيل الدخول بجوجل</button>
-  </div>
-  
-  <div id="userInfo">
-    <p id="userName"></p>
-    <button id="logoutBtn">تسجيل خروج</button>
-  </div>
+    <h1 id="title">اشتراك رحلات البابا اثناسيوس</h1>
+
+    <div id="userForm">
+        <div class="input-group">
+            <input type="text" id="nameInput" placeholder="اكتب اسمك هنا">
+            <button id="registerBtn" onclick="register()">تسجيل</button>
+        </div>
+    </div>
+
+    <button onclick="loginAdmin()">دخول المسؤول</button>
+
+    <div class="admin-area" id="adminArea">
+        <h3 id="listTitle">المسجلين</h3>
+        <div id="peopleList"></div>
+        <div class="counter" id="counter">العدد: 0</div>
+    </div>
 </div>
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+<script>
+    let people = JSON.parse(localStorage.getItem('subscribers')) || [];
+    let adminPassword = "250746"; // غير الباسورد ده لأي حاجة
+    let currentLang = 'ar';
 
-  // Firebase configuration بتاعك
-  const firebaseConfig = {
-    apiKey: "AIzaSyClQnuMs84jxHNam8KQVuT8iMgTGq7-ZVg",
-    authDomain: "papa-athanasius-trips.firebaseapp.com",
-    projectId: "papa-athanasius-trips",
-    storageBucket: "papa-athanasius-trips.firebasestorage.app",
-    messagingSenderId: "363546177326",
-    appId: "1:363546177326:web:cad831478b4db632cc14bf",
-    measurementId: "G-LR2516LPJR"
-  };
+    const translations = {
+        ar: {title: "اشتراك رحلات البابا اثناسيوس", placeholder: "اكتب اسمك هنا",
+             register: "تسجيل", list: "المسجلين", remove: "إلغاء", count: "العدد", wrongPass: "باسورد غلط"},
+        en: {title: "Pope Athanasius Trips Subscription", placeholder: "Enter your name",
+             register: "Register", list: "Registered", remove: "Remove", count: "Count", wrongPass: "Wrong password"},
+        ja: {title: "アタナシオス法王旅行登録", placeholder: "名前を入力してください",
+             register: "登録", list: "登録者", remove: "削除", count: "人数", wrongPass: "パスワードが違います"}
+    };
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const provider = new GoogleAuthProvider();
-
-  const loginBtn = document.getElementById('loginBtn');
-  const logoutBtn = document.getElementById('logoutBtn');
-  const loginSection = document.getElementById('loginSection');
-  const userInfo = document.getElementById('userInfo');
-  const userName = document.getElementById('userName');
-
-  // تسجيل الدخول
-  loginBtn.onclick = async () => {
-    try {
-      await signInWithPopup(auth, provider);
-    } catch (error) {
-      alert('خطأ في تسجيل الدخول: ' + error.message);
-      console.error(error);
+    function setLang(lang) {
+        currentLang = lang;
+        const t = translations[lang];
+        document.getElementById('title').textContent = t.title;
+        document.getElementById('nameInput').placeholder = t.placeholder;
+        document.getElementById('registerBtn').textContent = t.register;
+        document.getElementById('listTitle').textContent = t.list;
+        document.documentElement.lang = lang;
+        document.documentElement.dir = lang === 'ar'? 'rtl' : 'ltr';
+        updateList();
     }
-  };
 
-  // تسجيل الخروج
-  logoutBtn.onclick = () => {
-    signOut(auth);
-  };
+    function register() {
+        const name = document.getElementById('nameInput').value.trim();
+        if (!name) return alert("اكتب اسمك الأول!");
 
-  // مراقبة حالة الدخول
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      loginSection.style.display = 'none';
-      userInfo.style.display = 'block';
-      userName.textContent = `مرحباً ${user.displayName}`;
-    } else {
-      loginSection.style.display = 'block';
-      userInfo.style.display = 'none';
+        people.push({id: Date.now(), name: name, time: new Date().toLocaleString()});
+        localStorage.setItem('subscribers', JSON.stringify(people));
+        document.getElementById('nameInput').value = '';
+        alert(currentLang === 'ar'? "تم التسجيل بنجاح!" : "Registered successfully!");
     }
-  });
+
+    function loginAdmin() {
+        let pass = prompt(currentLang === 'ar'? "ادخل باسورد المسؤول:" : "Enter admin password:");
+        if (pass === adminPassword) {
+            document.getElementById('adminArea').style.display = 'block';
+            updateList();
+        } else {
+            alert(translations[currentLang].wrongPass);
+        }
+    }
+
+    function removePerson(id) {
+        people = people.filter(p => p.id!== id);
+        localStorage.setItem('subscribers', JSON.stringify(people));
+        updateList();
+    }
+
+    function updateList() {
+        const listDiv = document.getElementById('peopleList');
+        listDiv.innerHTML = '';
+        const t = translations[currentLang];
+
+        people.forEach(p => {
+            const div = document.createElement('div');
+            div.className = 'person';
+            div.innerHTML = `
+                <span>${p.name} <small style="opacity:0.6">- ${p.time}</small></span>
+                <button class="remove-btn" onclick="removePerson(${p.id})">${t.remove}</button>
+            `;
+            listDiv.appendChild(div);
+        });
+
+        document.getElementById('counter').textContent = `${t.count}: ${people.length}`;
+    }
 </script>
-
 </body>
 </html>
