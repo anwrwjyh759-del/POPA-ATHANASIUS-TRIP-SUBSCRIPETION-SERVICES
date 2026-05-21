@@ -27,7 +27,7 @@
         justify-content: center;
     }
 
-   .container {
+  .container {
         width: 100%;
         max-width: 600px;
         background: var(--card);
@@ -38,7 +38,7 @@
         transition: 0.5s;
     }
 
-   .container.glow {
+  .container.glow {
         box-shadow: 0 0 20px #00e5ff, 0 0 40px #00e5ff, 0 0 60px #00e5ff;
         border-color: #00e5ff;
     }
@@ -50,7 +50,7 @@
         margin-bottom: 20px;
     }
 
-   .lang-switch {
+  .lang-switch {
         display: flex;
         gap: 10px;
         justify-content: center;
@@ -75,7 +75,7 @@
         box-shadow: var(--neon-glow);
     }
 
-   .input-group {
+  .input-group {
         display: flex;
         gap: 10px;
         margin-bottom: 15px;
@@ -93,14 +93,14 @@
         font-size: 16px;
     }
 
-   .admin-area {
+  .admin-area {
         display: none;
         margin-top: 20px;
         border-top: 1px solid var(--neon);
         padding-top: 20px;
     }
 
-   .person {
+  .person {
         background: var(--bg);
         border: 1px solid var(--neon);
         padding: 12px;
@@ -111,7 +111,7 @@
         align-items: center;
     }
 
-   .remove-btn {
+  .remove-btn {
         border: 1px solid var(--red);
         color: var(--red);
         padding: 5px 12px;
@@ -177,29 +177,11 @@
     </div>
 </div>
 
-<script type="module">
-    // استورد Firebase
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getDatabase, ref, set, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
-    // 1. حط هنا بيانات مشروع Firebase بتاعك
-    const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT.firebaseapp.com",
-      databaseURL: "https://YOUR_PROJECT.firebaseio.com",
-      projectId: "YOUR_PROJECT",
-      storageBucket: "YOUR_PROJECT.appspot.com",
-      messagingSenderId: "123456789",
-      appId: "1:123456789:web:abcdef"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-
-    let people = [];
+<script>
+    let people = JSON.parse(localStorage.getItem('subscribers') || '[]');
     let adminPassword = "250746";
     let currentLang = 'ar';
-    let tripDate = null;
+    let tripDate = localStorage.getItem('tripDate');
 
     const translations = {
         ar: {title: "اشتراك رحلات البابا اثناسيوس", placeholder: "اكتب اسمك هنا",
@@ -216,20 +198,16 @@
              days: "日", hours: "時間", mins: "分", secs: "秒", finished: "旅行開始!"}
     };
 
-    // جيب البيانات من Firebase اول ما الصفحة تفتح
-    onValue(ref(db, 'subscribers'), (snapshot) => {
-        const data = snapshot.val();
-        people = data? Object.keys(data).map(key => ({id: key,...data[key]})) : [];
+    // لما الصفحة تفتح
+    window.onload = function() {
+        if (tripDate) {
+            document.getElementById('tripDate').value = tripDate;
+            startCountdown();
+        }
         updateList();
-    });
+    }
 
-    onValue(ref(db, 'tripDate'), (snapshot) => {
-        tripDate = snapshot.val();
-        if (tripDate) document.getElementById('tripDate').value = tripDate;
-        startCountdown();
-    });
-
-    window.setLang = function(lang) {
+    function setLang(lang) {
         currentLang = lang;
         const t = translations[lang];
         document.getElementById('title').textContent = t.title;
@@ -240,23 +218,28 @@
         document.documentElement.lang = lang;
         document.documentElement.dir = lang === 'ar'? 'rtl' : 'ltr';
         updateList();
-        startCountdown();
+        if (tripDate) startCountdown();
     }
 
-    window.register = function() {
+    function register() {
         const name = document.getElementById('nameInput').value.trim();
         if (!name) return alert("اكتب اسمك الأول!");
 
-        push(ref(db, 'subscribers'), {
+        const newPerson = {
+            id: Date.now(),
             name: name,
             time: new Date().toLocaleString()
-        });
+        };
+
+        people.push(newPerson);
+        localStorage.setItem('subscribers', JSON.stringify(people));
 
         document.getElementById('nameInput').value = '';
+        updateList();
         alert(currentLang === 'ar'? "تم التسجيل بنجاح!" : "Registered successfully!");
     }
 
-    window.loginAdmin = function() {
+    function loginAdmin() {
         let pass = prompt(currentLang === 'ar'? "ادخل باسورد المسؤول:" : "Enter admin password:");
         if (pass === adminPassword) {
             document.getElementById('adminArea').style.display = 'block';
@@ -265,14 +248,18 @@
         }
     }
 
-    window.removePerson = function(id) {
-        remove(ref(db, 'subscribers/' + id));
+    function removePerson(id) {
+        people = people.filter(p => p.id!= id);
+        localStorage.setItem('subscribers', JSON.stringify(people));
+        updateList();
     }
 
-    window.setTripDate = function() {
+    function setTripDate() {
         const date = document.getElementById('tripDate').value;
         if (!date) return alert("اختار معاد!");
-        set(ref(db, 'tripDate'), date);
+        tripDate = date;
+        localStorage.setItem('tripDate', date);
+        startCountdown();
     }
 
     function updateList() {
@@ -298,7 +285,9 @@
 
         const countDownDate = new Date(tripDate).getTime();
 
-        setInterval(() => {
+        clearInterval(window.countdownInterval);
+
+        window.countdownInterval = setInterval(() => {
             const now = new Date().getTime();
             const distance = countDownDate - now;
             const t = translations[currentLang];
@@ -309,6 +298,7 @@
                 countDiv.innerHTML = t.finished;
                 countDiv.classList.add('finished');
                 container.classList.add('glow');
+                clearInterval(window.countdownInterval);
                 return;
             }
 
