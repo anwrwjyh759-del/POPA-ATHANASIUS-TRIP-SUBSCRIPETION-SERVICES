@@ -27,7 +27,7 @@
         justify-content: center;
     }
 
-  .container {
+   .container {
         width: 100%;
         max-width: 600px;
         background: var(--card);
@@ -38,7 +38,7 @@
         transition: 0.5s;
     }
 
-  .container.glow {
+   .container.glow {
         box-shadow: 0 0 20px #00e5ff, 0 0 40px #00e5ff, 0 0 60px #00e5ff;
         border-color: #00e5ff;
     }
@@ -50,7 +50,7 @@
         margin-bottom: 20px;
     }
 
-  .lang-switch {
+   .lang-switch {
         display: flex;
         gap: 10px;
         justify-content: center;
@@ -75,7 +75,7 @@
         box-shadow: var(--neon-glow);
     }
 
-  .input-group {
+   .input-group {
         display: flex;
         gap: 10px;
         margin-bottom: 15px;
@@ -93,14 +93,48 @@
         font-size: 16px;
     }
 
-  .admin-area {
+   .admin-area {
         display: none;
         margin-top: 20px;
         border-top: 1px solid var(--neon);
         padding-top: 20px;
     }
 
-  .person {
+   .competitions-area {
+        display: none;
+        margin-top: 20px;
+        border-top: 1px solid var(--neon);
+        padding-top: 20px;
+    }
+
+   .competitions-area h3 {
+        text-align: center;
+        color: var(--neon);
+        text-shadow: var(--neon-glow);
+        margin-bottom: 15px;
+    }
+
+   .coming-soon {
+        text-align: center;
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--neon);
+        background: var(--bg);
+        border: 2px solid var(--neon);
+        border-radius: 12px;
+        padding: 40px 20px;
+        text-shadow: var(--neon-glow);
+        box-shadow: var(--neon-glow);
+        letter-spacing: 3px;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { box-shadow: 0 0 10px #00e5ff, 0 0 20px #00e5ff; }
+        50% { box-shadow: 0 0 20px #00e5ff, 0 0 40px #00e5ff; }
+    }
+
+   .person {
         background: var(--bg);
         border: 1px solid var(--neon);
         padding: 12px;
@@ -111,7 +145,7 @@
         align-items: center;
     }
 
-  .remove-btn {
+   .remove-btn {
         border: 1px solid var(--red);
         color: var(--red);
         padding: 5px 12px;
@@ -163,6 +197,7 @@
     </div>
 
     <button onclick="loginAdmin()">دخول المسؤول</button>
+    <button onclick="toggleCompetitions()">المسابقات</button>
 
     <div class="admin-area" id="adminArea">
         <h3 id="dateTitle">تحديد معاد الرحلة</h3>
@@ -174,6 +209,11 @@
         <h3 id="listTitle">المسجلين</h3>
         <div id="peopleList"></div>
         <div class="counter" id="counter">العدد: 0</div>
+    </div>
+
+    <div class="competitions-area" id="competitionsArea">
+        <h3>المسابقات</h3>
+        <div class="coming-soon">COMING SOON</div>
     </div>
 </div>
 
@@ -198,7 +238,6 @@
              days: "日", hours: "時間", mins: "分", secs: "秒", finished: "旅行開始!"}
     };
 
-    // لما الصفحة تفتح
     window.onload = function() {
         if (tripDate) {
             document.getElementById('tripDate').value = tripDate;
@@ -248,6 +287,11 @@
         }
     }
 
+    function toggleCompetitions() {
+        const area = document.getElementById('competitionsArea');
+        area.style.display = area.style.display === 'block'? 'none' : 'block';
+    }
+
     function removePerson(id) {
         people = people.filter(p => p.id!= id);
         localStorage.setItem('subscribers', JSON.stringify(people));
@@ -284,7 +328,6 @@
         if (!tripDate) return;
 
         const countDownDate = new Date(tripDate).getTime();
-
         clearInterval(window.countdownInterval);
 
         window.countdownInterval = setInterval(() => {
