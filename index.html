@@ -1,9 +1,10 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>اشتراك - رحلات البابا اثناسيوس</title>
+<meta name="description" content="صفحة التسجيل الرسمية لرحلات البابا اثناسيوس">
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
 
@@ -13,6 +14,7 @@
         --neon-glow: 0 0 10px #00e5ff, 0 0 20px #00e5ff;
         --text: #e0e0e0;
         --card: #151520;
+        --red: #ff4444;
     }
 
     body {
@@ -25,7 +27,7 @@
         justify-content: center;
     }
 
-  .container {
+   .container {
         width: 100%;
         max-width: 600px;
         background: var(--card);
@@ -33,6 +35,12 @@
         border-radius: 15px;
         padding: 30px;
         box-shadow: var(--neon-glow);
+        transition: 0.5s;
+    }
+
+   .container.glow {
+        box-shadow: 0 0 20px #00e5ff, 0 0 40px #00e5ff, 0 0 60px #00e5ff;
+        border-color: #00e5ff;
     }
 
     h1 {
@@ -42,11 +50,12 @@
         margin-bottom: 20px;
     }
 
-  .lang-switch {
+   .lang-switch {
         display: flex;
         gap: 10px;
         justify-content: center;
         margin-bottom: 20px;
+        flex-wrap: wrap;
     }
 
     button {
@@ -66,14 +75,16 @@
         box-shadow: var(--neon-glow);
     }
 
-  .input-group {
+   .input-group {
         display: flex;
         gap: 10px;
-        margin-bottom: 20px;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
     }
 
-    input {
+    input, select {
         flex: 1;
+        min-width: 120px;
         padding: 12px;
         background: var(--bg);
         border: 2px solid var(--neon);
@@ -82,14 +93,14 @@
         font-size: 16px;
     }
 
-  .admin-area {
+   .admin-area {
         display: none;
         margin-top: 20px;
         border-top: 1px solid var(--neon);
         padding-top: 20px;
     }
 
-  .person {
+   .person {
         background: var(--bg);
         border: 1px solid var(--neon);
         padding: 12px;
@@ -100,15 +111,40 @@
         align-items: center;
     }
 
-  .remove-btn {
-        border: 1px solid #ff4444;
-        color: #ff4444;
+   .remove-btn {
+        border: 1px solid var(--red);
+        color: var(--red);
         padding: 5px 12px;
+    }
+
+    #countdown {
+        text-align: center;
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--neon);
+        margin: 20px 0;
+        text-shadow: var(--neon-glow);
+    }
+
+    #countdown.finished {
+        color: #00e5ff;
+        animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.3; }
+    }
+
+    label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 700;
     }
 </style>
 </head>
 <body>
-<div class="container">
+<div class="container" id="mainContainer">
     <div class="lang-switch">
         <button onclick="setLang('ar')">العربية</button>
         <button onclick="setLang('en')">English</button>
@@ -116,6 +152,8 @@
     </div>
 
     <h1 id="title">اشتراك رحلات البابا اثناسيوس</h1>
+
+    <div id="countdown"></div>
 
     <div id="userForm">
         <div class="input-group">
@@ -127,62 +165,114 @@
     <button onclick="loginAdmin()">دخول المسؤول</button>
 
     <div class="admin-area" id="adminArea">
+        <h3 id="dateTitle">تحديد معاد الرحلة</h3>
+        <div class="input-group">
+            <input type="date" id="tripDate">
+            <button onclick="setTripDate()">حفظ المعاد</button>
+        </div>
+
         <h3 id="listTitle">المسجلين</h3>
         <div id="peopleList"></div>
         <div class="counter" id="counter">العدد: 0</div>
     </div>
 </div>
 
-<script>
-    let people = JSON.parse(localStorage.getItem('subscribers')) || [];
-    let adminPassword = "250746"; // غير الباسورد ده لأي حاجة
+<script type="module">
+    // استورد Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getDatabase, ref, set, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    // 1. حط هنا بيانات مشروع Firebase بتاعك
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT.firebaseio.com",
+      projectId: "YOUR_PROJECT",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "123456789",
+      appId: "1:123456789:web:abcdef"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    let people = [];
+    let adminPassword = "250746";
     let currentLang = 'ar';
+    let tripDate = null;
 
     const translations = {
         ar: {title: "اشتراك رحلات البابا اثناسيوس", placeholder: "اكتب اسمك هنا",
-             register: "تسجيل", list: "المسجلين", remove: "إلغاء", count: "العدد", wrongPass: "باسورد غلط"},
+             register: "تسجيل", list: "المسجلين", remove: "إلغاء", count: "العدد",
+             wrongPass: "باسورد غلط", dateTitle: "تحديد معاد الرحلة", saveDate: "حفظ المعاد",
+             days: "يوم", hours: "ساعة", mins: "دقيقة", secs: "ثانية", finished: "الرحلة بدأت!"},
         en: {title: "Pope Athanasius Trips Subscription", placeholder: "Enter your name",
-             register: "Register", list: "Registered", remove: "Remove", count: "Count", wrongPass: "Wrong password"},
+             register: "Register", list: "Registered", remove: "Remove", count: "Count",
+             wrongPass: "Wrong password", dateTitle: "Set Trip Date", saveDate: "Save Date",
+             days: "Days", hours: "Hours", mins: "Mins", secs: "Secs", finished: "Trip Started!"},
         ja: {title: "アタナシオス法王旅行登録", placeholder: "名前を入力してください",
-             register: "登録", list: "登録者", remove: "削除", count: "人数", wrongPass: "パスワードが違います"}
+             register: "登録", list: "登録者", remove: "削除", count: "人数",
+             wrongPass: "パスワードが違います", dateTitle: "旅行日を設定", saveDate: "保存",
+             days: "日", hours: "時間", mins: "分", secs: "秒", finished: "旅行開始!"}
     };
 
-    function setLang(lang) {
+    // جيب البيانات من Firebase اول ما الصفحة تفتح
+    onValue(ref(db, 'subscribers'), (snapshot) => {
+        const data = snapshot.val();
+        people = data? Object.keys(data).map(key => ({id: key,...data[key]})) : [];
+        updateList();
+    });
+
+    onValue(ref(db, 'tripDate'), (snapshot) => {
+        tripDate = snapshot.val();
+        if (tripDate) document.getElementById('tripDate').value = tripDate;
+        startCountdown();
+    });
+
+    window.setLang = function(lang) {
         currentLang = lang;
         const t = translations[lang];
         document.getElementById('title').textContent = t.title;
         document.getElementById('nameInput').placeholder = t.placeholder;
         document.getElementById('registerBtn').textContent = t.register;
         document.getElementById('listTitle').textContent = t.list;
+        document.getElementById('dateTitle').textContent = t.dateTitle;
         document.documentElement.lang = lang;
         document.documentElement.dir = lang === 'ar'? 'rtl' : 'ltr';
         updateList();
+        startCountdown();
     }
 
-    function register() {
+    window.register = function() {
         const name = document.getElementById('nameInput').value.trim();
         if (!name) return alert("اكتب اسمك الأول!");
 
-        people.push({id: Date.now(), name: name, time: new Date().toLocaleString()});
-        localStorage.setItem('subscribers', JSON.stringify(people));
+        push(ref(db, 'subscribers'), {
+            name: name,
+            time: new Date().toLocaleString()
+        });
+
         document.getElementById('nameInput').value = '';
         alert(currentLang === 'ar'? "تم التسجيل بنجاح!" : "Registered successfully!");
     }
 
-    function loginAdmin() {
+    window.loginAdmin = function() {
         let pass = prompt(currentLang === 'ar'? "ادخل باسورد المسؤول:" : "Enter admin password:");
         if (pass === adminPassword) {
             document.getElementById('adminArea').style.display = 'block';
-            updateList();
         } else {
             alert(translations[currentLang].wrongPass);
         }
     }
 
-    function removePerson(id) {
-        people = people.filter(p => p.id!== id);
-        localStorage.setItem('subscribers', JSON.stringify(people));
-        updateList();
+    window.removePerson = function(id) {
+        remove(ref(db, 'subscribers/' + id));
+    }
+
+    window.setTripDate = function() {
+        const date = document.getElementById('tripDate').value;
+        if (!date) return alert("اختار معاد!");
+        set(ref(db, 'tripDate'), date);
     }
 
     function updateList() {
@@ -195,12 +285,40 @@
             div.className = 'person';
             div.innerHTML = `
                 <span>${p.name} <small style="opacity:0.6">- ${p.time}</small></span>
-                <button class="remove-btn" onclick="removePerson(${p.id})">${t.remove}</button>
+                <button class="remove-btn" onclick="removePerson('${p.id}')">${t.remove}</button>
             `;
             listDiv.appendChild(div);
         });
 
         document.getElementById('counter').textContent = `${t.count}: ${people.length}`;
+    }
+
+    function startCountdown() {
+        if (!tripDate) return;
+
+        const countDownDate = new Date(tripDate).getTime();
+
+        setInterval(() => {
+            const now = new Date().getTime();
+            const distance = countDownDate - now;
+            const t = translations[currentLang];
+            const countDiv = document.getElementById('countdown');
+            const container = document.getElementById('mainContainer');
+
+            if (distance < 0) {
+                countDiv.innerHTML = t.finished;
+                countDiv.classList.add('finished');
+                container.classList.add('glow');
+                return;
+            }
+
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            countDiv.innerHTML = `${days} ${t.days} ${hours} ${t.hours} ${minutes} ${t.mins} ${seconds} ${t.secs}`;
+        }, 1000);
     }
 </script>
 </body>
